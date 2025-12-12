@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone, timedelta
-from fastapi import Header
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Header
 
 app = FastAPI(title="HWP Text Extractor", version="1.0.0")
 
