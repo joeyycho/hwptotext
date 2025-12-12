@@ -25,21 +25,21 @@ def sha256_bytes(b: bytes) -> str:
 
 def run_hwp5txt(input_path: str) -> str:
     cmds = [
+        # 1) 엔트리포인트 커맨드가 있으면 가장 좋음
         ["hwp5txt", input_path],
-        [sys.executable, "-m", "hwp5txt", input_path],
+        # 2) 없으면 모듈 경로로 실행 (Render에서 이게 보통 먹힘)
+        [sys.executable, "-m", "hwp5.hwp5txt", input_path],
     ]
     last = None
     for cmd in cmds:
         p = subprocess.run(cmd, capture_output=True, text=True)
-        # 성공
         if p.returncode == 0:
             return p.stdout
-        # 실패 기록
         last = {
             "cmd": cmd,
             "returncode": p.returncode,
-            "stdout": p.stdout[-2000:],
-            "stderr": p.stderr[-2000:],
+            "stdout": (p.stdout or "")[-2000:],
+            "stderr": (p.stderr or "")[-2000:],
         }
     raise RuntimeError(f"Failed to run hwp5txt. Last: {json.dumps(last, ensure_ascii=False)}")
 
