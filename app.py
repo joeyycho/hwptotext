@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone, timedelta
+from fastapi import Header
 
 app = FastAPI(title="HWP Text Extractor", version="1.0.0")
 
@@ -133,10 +134,13 @@ def health():
     return {"ok": True}
 
 @app.post("/extract")
-async def extract(
-    file: UploadFile = File(...),
-    filename: str | None = Form(None),
-):
+async def extract_anyfile(request: Request, authorization: str | None = Header(None)):
+    token = os.environ.get("API_TOKEN")
+    if token:
+        if not authorization or authorization != f"Bearer {token}":
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+    form = await request.form()
     # 1) 파일 읽기
     try:
         content = await file.read()
