@@ -1,0 +1,1 @@
+{"detail":"Extract failed: Failed to run hwp5txt. Last error: Command '['/Users/joi/Desktop/hwptotext/.venv/bin/python', '-m', 'hwp5txt', '/var/folders/19/y17mmkhn77j73n_vjj9szjnr0000gn/T/tmpi5fsgpnt/input.hwp']' returned non-zero exit status 1."}
