@@ -134,14 +134,18 @@ def health():
     return {"ok": True}
 
 @app.post("/extract")
-async def extract_anyfile(request: Request, authorization: str | None = Header(None)):
+async def extract(
+    file: UploadFile = File(...),
+    filename: str | None = Form(None),
+    authorization: str | None = Header(None),
+):
+    # (옵션) 토큰 체크
     token = os.environ.get("API_TOKEN")
     if token:
         if not authorization or authorization != f"Bearer {token}":
             raise HTTPException(status_code=401, detail="Unauthorized")
 
-    form = await request.form()
-    # 1) 파일 읽기
+    # 파일 읽기
     try:
         content = await file.read()
     except Exception as e:
@@ -151,10 +155,10 @@ async def extract_anyfile(request: Request, authorization: str | None = Header(N
         raise HTTPException(status_code=400, detail="Empty file")
 
     orig_name = filename or file.filename or "unknown.hwp"
+
     file_hash = sha256_bytes(content)
     doc_id = f"sha256:{file_hash}"
 
-    # 2) 임시 파일로 저장 후 hwp5txt 실행
     try:
         with tempfile.TemporaryDirectory() as td:
             in_path = os.path.join(td, "input.hwp")
@@ -165,10 +169,8 @@ async def extract_anyfile(request: Request, authorization: str | None = Header(N
             text = normalize_text(raw_text)
 
     except Exception as e:
-        # 변환 실패는 422로 내보내면 n8n에서 분기하기 좋습니다.
         raise HTTPException(status_code=422, detail=f"Extract failed: {e}")
 
-    # 3) 구조화
     blocks = build_blocks_from_text(text)
     sections = build_sections(blocks)
 
@@ -191,10 +193,5 @@ async def extract_anyfile(request: Request, authorization: str | None = Header(N
         "sections": sections,
         "warnings": []
     }
-
-    if doc["stats"]["num_chars"] < 500:
-        doc["warnings"].append({"code": "TOO_SHORT", "message": "추출 텍스트가 짧습니다. 문서 손상/특수요소/비정상 가능."})
-    if doc["stats"]["num_headings"] == 0 and doc["stats"]["num_chars"] > 2000:
-        doc["warnings"].append({"code": "NO_HEADINGS", "message": "긴 문서인데 헤딩 감지 0. 섹션 분리 약할 수 있음."})
 
     return JSONResponse(doc)
